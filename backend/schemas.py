@@ -35,6 +35,7 @@ class UserResponse(UserBase):
 class PacienteRegister(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8)
+    nickname_anonimo: str = Field(..., description="Usuario con el que se identificará en la app")
     carrera: Optional[str] = None
     jornada: str = "vespertino"
 
@@ -46,6 +47,7 @@ class PsicologoRegister(BaseModel):
     enfoque_clinico: str
     tarifa_diurna: float
     tarifa_extendida: float
+    moneda: str = "CLP"
     datos_transferencia: str
 
 

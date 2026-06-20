@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { jwtDecode } from 'jwt-decode';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -20,7 +22,6 @@ export default function Login() {
     setError('');
 
     try {
-      // OAuth2PasswordRequestForm requiere x-www-form-urlencoded y usar 'username' y 'password'
       const formData = new URLSearchParams();
       formData.append('username', email);
       formData.append('password', password);
@@ -32,31 +33,19 @@ export default function Login() {
       });
 
       const token = response.data.access_token;
-      
-      // Decodificamos el JWT manualmente (Base64) para extraer el rol que configuramos en FastAPI
-      const payloadBase64 = token.split('.')[1];
-      const decodedPayload = JSON.parse(atob(payloadBase64));
-      const role = decodedPayload.role;
 
-      // Guardamos la sesión usando nuestra función global
-      login(token, role);
-      
-      // Redirigir al panel principal
+      login(token);
       navigate('/dashboard');
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.detail) {
-        setError(err.response.data.detail); // Mostrar error detallado del backend
-      } else {
-        setError('Error al intentar iniciar sesión. Revisa tu conexión.');
-      }
+      console.error("Error en la petición:", err.response?.data || err);
+      setError(err.response?.data?.detail || "Error de conexión");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0D1321] text-gray-100 p-4 relative overflow-hidden">
-      {/* Efectos de luces difuminadas de fondo para aportar estética Premium */}
+    <div className="min-h-screen flex items-center justify-center bg-[#0D1321] text-gray-100 p-4 relative overflow-hidden font-sans">
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl opacity-50 mix-blend-screen pointer-events-none"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-emerald-600/20 rounded-full blur-3xl opacity-50 mix-blend-screen pointer-events-none"></div>
 
@@ -104,20 +93,23 @@ export default function Login() {
                 <Lock className="h-5 w-5 text-gray-500" />
               </div>
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 bg-[#1A2235]/80 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all duration-300"
+                className="w-full pl-11 pr-12 py-3 bg-[#1A2235]/80 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all duration-300"
                 placeholder="Contraseña"
               />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-500 hover:text-cyan-400 transition-colors">
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center items-center py-3.5 px-4 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 focus:ring-offset-[#0D1321] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_25px_rgba(8,145,178,0.5)]"
+            className="w-full flex justify-center items-center py-3.5 px-4 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-cyan-600 to-emerald-600 hover:from-cyan-500 hover:to-emerald-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500 focus:ring-offset-[#0D1321] transition-all duration-300 disabled:opacity-50 shadow-[0_0_20px_rgba(8,145,178,0.3)] hover:shadow-[0_0_25px_rgba(8,145,178,0.5)]"
           >
             {loading ? (
               <>

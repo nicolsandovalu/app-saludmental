@@ -47,6 +47,19 @@ class PacienteProfile(Base):
     # Relaciones
     user = relationship("User", back_populates="paciente_profile")
     citas = relationship("Cita", back_populates="paciente", cascade="all, delete-orphan")
+    mood_logs = relationship("MoodLog", back_populates="paciente", cascade="all, delete-orphan")
+
+
+class MoodLog(Base):
+    __tablename__ = "mood_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    paciente_id = Column(Integer, ForeignKey("paciente_profiles.id", ondelete="CASCADE"), nullable=False)
+    mood = Column(String, nullable=False)
+    timestamp = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relación
+    paciente = relationship("PacienteProfile", back_populates="mood_logs")
 
 
 class PsicologoProfile(Base):
@@ -60,6 +73,7 @@ class PsicologoProfile(Base):
     enfoque_clinico = Column(String, nullable=True)
     tarifa_diurna = Column(Float, nullable=False)
     tarifa_extendida = Column(Float, nullable=False)
+    moneda = Column(String, default="CLP", nullable=False)
     datos_transferencia = Column(Text, nullable=True)
 
     # Relaciones
@@ -81,3 +95,31 @@ class Cita(Base):
     # Relaciones
     paciente = relationship("PacienteProfile", back_populates="citas")
     psicologo = relationship("PsicologoProfile", back_populates="citas")
+
+class ForumTopic(Base):
+    __tablename__ = "forum_topics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Autor
+    author_id = Column(Integer, ForeignKey("paciente_profiles.id", ondelete="CASCADE"), nullable=False)
+    author = relationship("PacienteProfile")
+
+    posts = relationship("ForumPost", back_populates="topic", cascade="all, delete-orphan")
+
+
+class ForumPost(Base):
+    __tablename__ = "forum_posts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    topic_id = Column(Integer, ForeignKey("forum_topics.id", ondelete="CASCADE"), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Autor
+    author_id = Column(Integer, ForeignKey("paciente_profiles.id", ondelete="CASCADE"), nullable=False)
+    author = relationship("PacienteProfile")
+
+    topic = relationship("ForumTopic", back_populates="posts")

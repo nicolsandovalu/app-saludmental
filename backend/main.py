@@ -7,16 +7,16 @@ load_dotenv()
 
 app = FastAPI(title="Salud Mental API")
 
-# Configure CORS
+# 1. Configuración CORS Inmediata
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Adjust this in production to match your frontend domain
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-from routers import chat, auth
+from routers import chat, auth, mood, appointments, psicologos, foro
 from database import engine
 import models
 
@@ -29,3 +29,7 @@ def read_root():
 
 app.include_router(chat.router)
 app.include_router(auth.router)
+app.include_router(mood.router)
+app.include_router(appointments.router)
+app.include_router(psicologos.router)
+app.include_router(foro.router)

@@ -5,24 +5,38 @@ from google.genai import types
 # El cliente tomará automáticamente la variable GEMINI_API_KEY de las variables de entorno
 client = genai.Client()
 
-SYSTEM_PROMPT = """Eres un asistente virtual entrenado estrictamente para proveer Primeros Auxilios Psicológicos (PAP).
+BASE_PROMPT = """Eres un asistente virtual entrenado estrictamente para proveer Primeros Auxilios Psicológicos (PAP).
 Tus directrices fundamentales son:
-1. Escucha activa y validación emocional constante.
+1. Escucha activa y validación emocional constante. NUNCA repitas el mismo saludo inicial.
 2. Contención breve, empática y centrada en el aquí y el ahora.
 3. CERO diagnósticos médicos, psiquiátricos o psicológicos. No eres un médico ni reemplazas a un profesional de la salud.
 4. Si detectas en el usuario ideación suicida, autolesiones, riesgo vital inminente, o una crisis severa, tu ÚNICA respuesta debe ser EXACTAMENTE la siguiente cadena de texto: "ACTIVAR_ALERTA_SOS". No añadas ninguna otra palabra, saludo o justificación en ese caso.
 
-Mantén tus respuestas compasivas, concisas y no juzgues al usuario en ningún momento."""
+Mantén tus respuestas compasivas, concisas y no juzgues al usuario en ningún momento.
+Contexto del usuario:
+- Nombre / Apodo: {nickname}
+- Momento del día: {time_of_day}
 
-async def generar_respuesta_pap(mensaje_usuario: str, historial: list) -> str:
+Usa el nombre del usuario ({nickname}) de forma natural y cálida al menos una vez, sin ser repetitivo.
+Dado que es de {time_of_day}, adapta tu tono a uno pertinente (ej. si es de noche o madrugada, un tono más pausado y acogedor).
+"""
+
+async def generar_respuesta_pap(mensaje_usuario: str, historial: list, nickname: str = None, time_of_day: str = None) -> str:
     """
     Genera una respuesta utilizando Gemini optimizado para Primeros Auxilios Psicológicos.
     
     :param mensaje_usuario: El mensaje actual enviado por el usuario.
     :param historial: Lista de diccionarios con el historial previo de la conversación.
                       Se espera formato: [{"role": "user"|"model", "content": "texto"}, ...]
+    :param nickname: Apodo o nombre del usuario.
+    :param time_of_day: Momento del día actual (mañana, tarde, noche, madrugada).
     :return: Texto de la respuesta generada o el trigger de emergencia.
     """
+    
+    # Construir el system prompt dinámico
+    safe_nickname = nickname if nickname else "Amigo/a"
+    safe_time = time_of_day if time_of_day else "día"
+    system_instruction = BASE_PROMPT.format(nickname=safe_nickname, time_of_day=safe_time)
     contents = []
     
     # Procesar el historial previo para darle contexto a Gemini
@@ -68,8 +82,8 @@ async def generar_respuesta_pap(mensaje_usuario: str, historial: list) -> str:
         model='gemini-2.5-flash',
         contents=contents,
         config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=0.2, # Baja creatividad para respuestas clínicas, consistentes y evitar alucinaciones
+            system_instruction=system_instruction,
+            temperature=0.4, # Ligero aumento para mayor calidez y variación de saludos
             safety_settings=safety_settings,
         )
     )
