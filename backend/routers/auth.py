@@ -35,6 +35,8 @@ def register_paciente(paciente_data: PacienteRegister, db: Session = Depends(get
         # 3. Crear el Perfil del Paciente vinculado al Usuario Base usando el nickname provisto
         new_profile = PacienteProfile(
             user_id=new_user.id,
+            nombre=paciente_data.nombre,
+            apellido=paciente_data.apellido,
             nickname_anonimo=paciente_data.nickname_anonimo,
             carrera=paciente_data.carrera,
             jornada=paciente_data.jornada
@@ -45,7 +47,7 @@ def register_paciente(paciente_data: PacienteRegister, db: Session = Depends(get
         
         # 4. Generar el Token de Acceso (Importante usar .value en el Enum)
         access_token = create_access_token(
-            data={"sub": new_user.email, "role": new_user.role.value, "username": new_user.username, "nickname": paciente_data.nickname_anonimo}
+            data={"sub": new_user.email, "role": new_user.role.value, "username": new_user.username, "nickname": paciente_data.nickname_anonimo, "nombre_completo": f"{paciente_data.nombre} {paciente_data.apellido}", "nombre": paciente_data.nombre}
         )
         return {"access_token": access_token, "token_type": "bearer"}
     except Exception as e:
@@ -111,14 +113,20 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     
     # Obtener el nombre/nickname según el perfil
     nickname = "Usuario"
+    nombre_completo = "Usuario"
+    nombre = "Usuario"
     if user.role == UserRole.paciente and user.paciente_profile:
         nickname = user.paciente_profile.nickname_anonimo
+        nombre_completo = f"{user.paciente_profile.nombre} {user.paciente_profile.apellido}"
+        nombre = user.paciente_profile.nombre
     elif user.role == UserRole.psicologo and user.psicologo_profile:
         nickname = user.psicologo_profile.nombre_completo
+        nombre_completo = user.psicologo_profile.nombre_completo
+        nombre = user.psicologo_profile.nombre_completo.split()[0] if user.psicologo_profile.nombre_completo else "Psicólogo"
 
     # Retornar token validado
     access_token = create_access_token(
-        data={"sub": user.email, "role": user.role.value, "username": user.username, "nickname": nickname}
+        data={"sub": user.email, "role": user.role.value, "username": user.username, "nickname": nickname, "nombre_completo": nombre_completo, "nombre": nombre}
     )
     return {"access_token": access_token, "token_type": "bearer"}
 

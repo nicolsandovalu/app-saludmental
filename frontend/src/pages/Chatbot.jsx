@@ -42,10 +42,10 @@ export default function Chatbot() {
         handleSendFreeText(initialMsg, true);
       } else {
         // Step 1: Saludo inicial empático
-        const nickname = user?.nickname || user?.email?.split('@')[0] || "Usuario";
+        const nombre = user?.nombre || user?.nombre_completo || user?.nickname || user?.email?.split('@')[0] || "Usuario";
         setMessages([{
           role: 'model',
-          content: `Hola, ${nickname}. ¿Cómo te sientes hoy? Estoy aquí para escucharte y acompañarte.`
+          content: `Hola, ${nombre}. ¿Cómo te sientes hoy? Estoy aquí para escucharte y acompañarte.`
         }]);
       }
     };
@@ -100,7 +100,7 @@ export default function Chatbot() {
       const response = await api.post('/chat/pap', {
         mensaje_usuario: userMessage,
         historial: messages.filter(m => !m.isRedirect),
-        nickname: user?.nickname || user?.email?.split('@')[0],
+        nickname: user?.nombre || user?.nombre_completo || user?.nickname || user?.email?.split('@')[0],
         time_of_day: timeOfDay,
         mood: userMood
       });

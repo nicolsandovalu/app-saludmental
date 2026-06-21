@@ -41,6 +41,8 @@ class PacienteProfile(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
     
+    nombre = Column(String, default="", nullable=False)
+    apellido = Column(String, default="", nullable=False)
     nickname_anonimo = Column(String, unique=True, index=True, nullable=False)
     carrera = Column(String, nullable=True)
     jornada = Column(String, default="vespertino")

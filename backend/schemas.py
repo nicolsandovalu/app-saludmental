@@ -33,6 +33,8 @@ class UserResponse(UserBase):
 # ==========================================
 
 class PacienteRegister(BaseModel):
+    nombre: str = Field(..., description="Nombre")
+    apellido: str = Field(..., description="Apellido")
     username: str = Field(..., description="Nombre de usuario único")
     email: EmailStr
     password: str = Field(..., min_length=8)

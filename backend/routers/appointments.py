@@ -158,7 +158,7 @@ def get_appointments(user: User = Depends(get_current_user), db: Session = Depen
                 "id": cita.id,
                 "time": cita.fecha_hora.strftime("%H:%M"),
                 "date": cita.fecha_hora.strftime("%Y-%m-%d"),
-                "name": paciente.nickname_anonimo if paciente else "Desconocido",
+                "name": f"{paciente.nombre} {paciente.apellido}" if paciente else "Desconocido",
                 "status": cita.estado.value,
                 "payment": cita.pago_simulado_status.value,
                 "tipo_pago": cita.tipo_pago,

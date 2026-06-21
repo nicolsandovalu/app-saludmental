@@ -8,6 +8,8 @@ import { jwtDecode } from 'jwt-decode';
 
 export default function RegisterPaciente() {
   const [formData, setFormData] = useState({
+    nombre: '',
+    apellido: '',
     username: '',
     email: '',
     password: '',
@@ -71,6 +73,34 @@ export default function RegisterPaciente() {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex gap-4">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-gray-500" />
+              </div>
+              <input
+                type="text"
+                name="nombre"
+                required
+                value={formData.nombre}
+                onChange={handleChange}
+                className="w-full pl-11 pr-4 py-3 bg-[#1A2235]/80 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all duration-300"
+                placeholder="Nombre"
+              />
+            </div>
+            <div className="relative flex-1">
+              <input
+                type="text"
+                name="apellido"
+                required
+                value={formData.apellido}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-[#1A2235]/80 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all duration-300"
+                placeholder="Apellido"
+              />
+            </div>
+          </div>
+
           <div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
