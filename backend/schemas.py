@@ -33,6 +33,7 @@ class UserResponse(UserBase):
 # ==========================================
 
 class PacienteRegister(BaseModel):
+    username: str = Field(..., description="Nombre de usuario único")
     email: EmailStr
     password: str = Field(..., min_length=8)
     nickname_anonimo: str = Field(..., description="Usuario con el que se identificará en la app")
@@ -40,6 +41,7 @@ class PacienteRegister(BaseModel):
     jornada: str = "vespertino"
 
 class PsicologoRegister(BaseModel):
+    username: str = Field(..., description="Nombre de usuario único")
     email: EmailStr
     password: str = Field(..., min_length=8)
     nombre_completo: str

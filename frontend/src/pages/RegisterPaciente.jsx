@@ -8,6 +8,7 @@ import { jwtDecode } from 'jwt-decode';
 
 export default function RegisterPaciente() {
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
     password: '',
     nickname_anonimo: '',
@@ -73,6 +74,23 @@ export default function RegisterPaciente() {
           <div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <User className="h-5 w-5 text-gray-500" />
+              </div>
+              <input
+                type="text"
+                name="username"
+                required
+                value={formData.username}
+                onChange={handleChange}
+                className="w-full pl-11 pr-4 py-3 bg-[#1A2235]/80 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all duration-300"
+                placeholder="Nombre de Usuario Único"
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Mail className="h-5 w-5 text-gray-500" />
               </div>
               <input
@@ -120,7 +138,7 @@ export default function RegisterPaciente() {
                 value={formData.nickname_anonimo}
                 onChange={handleChange}
                 className="w-full pl-11 pr-4 py-3 bg-[#1A2235]/80 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all duration-300"
-                placeholder="Nombre de Usuario o Apodo"
+                placeholder="Apodo (Cómo quieres que te llamen)"
               />
             </div>
           </div>

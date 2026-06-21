@@ -8,6 +8,7 @@ import { jwtDecode } from 'jwt-decode';
 
 export default function RegisterPsicologo() {
   const [formData, setFormData] = useState({
+    username: '',
     email: '',
     password: '',
     nombre_completo: '',
@@ -84,6 +85,11 @@ export default function RegisterPsicologo() {
           <div className="space-y-4">
             <h3 className="text-lg font-semibold text-white/80 border-b border-white/10 pb-2 mb-4">Datos de Acceso</h3>
             
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><UserIcon className="h-5 w-5 text-gray-500" /></div>
+              <input type="text" name="username" required value={formData.username} onChange={handleChange} className="w-full pl-11 pr-4 py-3 bg-[#1A2235]/80 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="Nombre de Usuario Único" />
+            </div>
+
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><Mail className="h-5 w-5 text-gray-500" /></div>
               <input type="email" name="email" required value={formData.email} onChange={handleChange} className="w-full pl-11 pr-4 py-3 bg-[#1A2235]/80 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="Correo Electrónico" />

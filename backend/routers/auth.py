@@ -24,6 +24,7 @@ def register_paciente(paciente_data: PacienteRegister, db: Session = Depends(get
     try:
         # 2. Crear el Usuario Base
         new_user = User(
+            username=paciente_data.username,
             email=paciente_data.email,
             hashed_password=get_password_hash(paciente_data.password),
             role=UserRole.paciente
@@ -44,7 +45,7 @@ def register_paciente(paciente_data: PacienteRegister, db: Session = Depends(get
         
         # 4. Generar el Token de Acceso (Importante usar .value en el Enum)
         access_token = create_access_token(
-            data={"sub": new_user.email, "role": new_user.role.value, "nickname": paciente_data.nickname_anonimo}
+            data={"sub": new_user.email, "role": new_user.role.value, "username": new_user.username, "nickname": paciente_data.nickname_anonimo}
         )
         return {"access_token": access_token, "token_type": "bearer"}
     except Exception as e:
@@ -62,6 +63,7 @@ def register_psicologo(psicologo_data: PsicologoRegister, db: Session = Depends(
     try:
         # 2. Crear el Usuario Base
         new_user = User(
+            username=psicologo_data.username,
             email=psicologo_data.email,
             hashed_password=get_password_hash(psicologo_data.password),
             role=UserRole.psicologo
@@ -86,7 +88,7 @@ def register_psicologo(psicologo_data: PsicologoRegister, db: Session = Depends(
         
         # 4. Generar el Token
         access_token = create_access_token(
-            data={"sub": new_user.email, "role": new_user.role.value, "nickname": psicologo_data.nombre_completo}
+            data={"sub": new_user.email, "role": new_user.role.value, "username": new_user.username, "nickname": psicologo_data.nombre_completo}
         )
         return {"access_token": access_token, "token_type": "bearer"}
     except Exception as e:
@@ -116,7 +118,7 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
     # Retornar token validado
     access_token = create_access_token(
-        data={"sub": user.email, "role": user.role.value, "nickname": nickname}
+        data={"sub": user.email, "role": user.role.value, "username": user.username, "nickname": nickname}
     )
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -144,9 +146,10 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
         
-    # Retornamos un diccionario con los datos básicos para que otros routers puedan usar current_user["id"]
+    # Retornamos un diccionario con los datos básicos
     return {
         "id": user.id,
         "email": user.email,
+        "username": user.username,
         "role": user.role.value
     }

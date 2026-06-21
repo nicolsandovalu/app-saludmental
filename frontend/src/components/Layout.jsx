@@ -1,12 +1,13 @@
 import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, MessageSquareText, Video, Users, LogOut, Phone, Calendar, Users as UsersIcon, CreditCard } from 'lucide-react';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { LayoutDashboard, MessageSquareText, Video, Users, LogOut, Phone, Calendar, Users as UsersIcon, CreditCard, Home, Search, MessageCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Layout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showSOS, setShowSOS] = React.useState(false);
 
   const handleLogout = () => {
@@ -17,30 +18,34 @@ export default function Layout() {
   const isPaciente = user?.role === 'paciente';
 
   const pacienteNavItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="h-6 w-6" /> },
-    { name: 'Especialistas', path: '/dashboard/especialistas', icon: <Video className="h-6 w-6" /> },
-    { name: 'Asistente', path: '/dashboard/chat', icon: <MessageSquareText className="h-6 w-6" /> },
+    { name: 'Inicio', path: '/dashboard', icon: <Home className="h-6 w-6" /> },
+    { name: 'Especialistas', path: '/dashboard/especialistas', icon: <Search className="h-6 w-6" /> },
+    { name: 'Asistente', path: '/dashboard/chat', icon: <MessageCircle className="h-6 w-6" /> },
     { name: 'Comunidad', path: '/dashboard/comunidad', icon: <Users className="h-6 w-6" /> },
   ];
 
   const psicologoNavItems = [
-    { name: 'Panel', path: '/dashboard', icon: <LayoutDashboard className="h-6 w-6" /> },
+    { name: 'Inicio', path: '/dashboard', icon: <LayoutDashboard className="h-6 w-6" /> },
     { name: 'Agenda', path: '/dashboard/agenda', icon: <Calendar className="h-6 w-6" /> },
     { name: 'Pacientes', path: '/dashboard/pacientes', icon: <UsersIcon className="h-6 w-6" /> },
+    { name: 'Comunidad', path: '/dashboard/comunidad', icon: <Users className="h-6 w-6" /> },
     { name: 'Pagos', path: '/dashboard/pagos', icon: <CreditCard className="h-6 w-6" /> },
   ];
 
   const navItems = isPaciente ? pacienteNavItems : psicologoNavItems;
 
+  const isComunidadPath = location.pathname.includes('/comunidad');
+
   return (
-    <div className="min-h-screen bg-[#0D1321] text-gray-100 font-sans flex flex-col md:flex-row">
-      {/* Botón SOS Global Flotante (Solo para Pacientes) */}
+    <div className="min-h-screen bg-[#0B1321] text-gray-100 font-sans flex flex-col">
+      {/* Botón SOS Global (Globito Flotante) */}
       {isPaciente && (
         <button 
           onClick={() => setShowSOS(true)}
-          className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-50 h-14 w-14 rounded-full bg-[#FC8181] shadow-[0_0_20px_rgba(252,129,129,0.4)] flex items-center justify-center text-white hover:scale-110 hover:shadow-[0_0_30px_rgba(252,129,129,0.6)] transition-all cursor-pointer border border-[#FC8181]/50"
+          className={`fixed bottom-24 right-6 z-50 h-16 w-16 rounded-full bg-[#FC8181] shadow-[0_0_20px_rgba(252,129,129,0.5)] flex flex-col items-center justify-center text-white hover:scale-110 hover:bg-[#F56565] hover:shadow-[0_0_30px_rgba(252,129,129,0.6)] transition-all cursor-pointer border border-white/20 
+          ${(isComunidadPath || location.pathname.includes('/chat')) ? 'hidden md:flex' : 'flex'}`}
         >
-          <Phone className="h-7 w-7 animate-[pulse_2s_ease-in-out_infinite]" />
+          <span className="font-black tracking-wider text-[15px] drop-shadow-md">SOS</span>
         </button>
       )}
 
@@ -54,26 +59,29 @@ export default function Layout() {
           >
             <motion.div 
               initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }}
-              className="bg-[#151C2C] border border-red-500/30 rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl"
+              className="bg-[#FC8181] rounded-3xl p-8 w-full max-w-md text-center shadow-[0_0_50px_rgba(252,129,129,0.5)]"
             >
-              <div className="h-16 w-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                <Phone className="h-8 w-8" />
+              <div className="h-20 w-20 bg-white/30 rounded-full flex items-center justify-center mx-auto mb-6 text-[#1A2639] shadow-inner">
+                <Phone className="h-10 w-10 animate-pulse" />
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">¿Necesitas ayuda urgente?</h2>
-              <p className="text-gray-400 mb-6 text-sm">Nuestros especialistas en contención emocional están disponibles 24/7.</p>
+              <h2 className="text-3xl font-bold text-[#1A2639] mb-3">¿Necesitas ayuda urgente?</h2>
+              <p className="text-[#1A2639]/80 mb-8 font-semibold text-base">Nuestros especialistas en contención emocional están disponibles 24/7.</p>
               
-              <div className="space-y-3">
+              <div className="space-y-4"> 
                 <button 
                   onClick={() => { setShowSOS(false); navigate('/dashboard/chat'); }}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 to-emerald-600 rounded-xl font-medium hover:opacity-90 transition-opacity"
+                  className="w-full py-4 px-4 bg-[#1A2639] rounded-xl font-bold text-[#E2E8F0] text-lg hover:bg-[#0D1321] transition-colors flex items-center justify-center shadow-lg"
                 >
-                  Iniciar Chat de Contención
+                  Hablar con tu Psicóloga
                 </button>
-                <a href="tel:*4141" className="block w-full py-3 px-4 bg-red-500/10 border border-red-500/50 text-red-400 rounded-xl font-medium hover:bg-red-500/20 transition-colors">
+                <a href="tel:*4141" className="block w-full py-4 px-4 bg-[#E2E8F0] text-[#1A2639] rounded-xl font-bold text-lg hover:bg-white transition-colors shadow-lg">
                   Llamar Prevención Suicidio (*4141)
                 </a>
-                <button onClick={() => setShowSOS(false)} className="w-full py-3 px-4 text-gray-400 hover:text-white font-medium transition-colors">
-                  Cancelar
+                <a href="tel:133" className="block w-full py-4 px-4 bg-transparent border-2 border-[#1A2639] text-[#1A2639] rounded-xl font-bold text-lg hover:bg-[#1A2639]/10 transition-colors">
+                  Botón de Emergencia al Equipo
+                </a>
+                <button onClick={() => setShowSOS(false)} className="w-full py-4 px-4 text-[#1A2639] font-bold underline transition-colors mt-4 hover:text-[#0D1321]">
+                  Cancelar y volver
                 </button>
               </div>
             </motion.div>
@@ -81,63 +89,36 @@ export default function Layout() {
         )}
       </AnimatePresence>
 
-      {/* Sidebar Desktop */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#161F30] border-r border-gray-700/50 p-4 z-40 sticky top-0 h-screen">
-        <div className="flex items-center space-x-2 mb-10 px-2 pt-4">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-r from-cyan-500 to-emerald-500 flex items-center justify-center font-bold text-sm shadow-[0_0_15px_rgba(8,145,178,0.3)]">IS</div>
-          <span className="text-xl font-bold tracking-tight text-white">Inspira<span className="text-cyan-400">Salud</span></span>
-        </div>
-        
-        <nav className="flex-1 space-y-2">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === '/dashboard'}
-              className={({ isActive }) => 
-                `flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-300 ${
-                  isActive 
-                  ? 'bg-[#4FD1C5]/10 text-[#4FD1C5] font-medium border border-[#4FD1C5]/30 shadow-[0_0_10px_rgba(79,209,197,0.1)]' 
-                  : 'text-gray-400 hover:text-gray-100 hover:bg-white/5'
-                }`
-              }
-            >
-              {item.icon}
-              <span>{item.name}</span>
-            </NavLink>
-          ))}
-        </nav>
-        
-        <div className="pt-4 border-t border-white/5 mt-auto">
-          <button onClick={handleLogout} className="flex items-center space-x-3 px-4 py-3 w-full rounded-xl text-gray-400 hover:text-red-400 hover:bg-red-400/10 transition-colors text-left">
-            <LogOut className="h-5 w-5" />
-            <span>Cerrar Sesión</span>
-          </button>
-        </div>
-      </aside>
+
 
       {/* Main Content */}
-      <main className="flex-1 relative overflow-y-auto pb-24 md:pb-0 h-screen bg-[#0D1321]">
-        <Outlet />
+      <main className="flex-1 relative overflow-y-auto pb-24 h-screen bg-[#0B1321]">
+        <Outlet context={{ setShowSOS }} />
       </main>
 
-      {/* Bottom Navigation Mobile */}
-      <nav className="md:hidden fixed bottom-0 w-full bg-[#111827]/90 backdrop-blur-md border-t border-white/10 px-6 py-3 flex justify-between items-center z-40">
+      {/* Bottom Navigation Global (Mobile & Desktop Adaptada) */}
+      <nav className="fixed bottom-0 md:bottom-6 w-full md:w-auto md:min-w-[500px] md:left-1/2 md:-translate-x-1/2 bg-[#1A2639]/90 backdrop-blur-lg border-t md:border border-white/10 px-6 py-3 md:rounded-3xl flex justify-between items-center z-40 shadow-2xl">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             end={item.path === '/dashboard'}
             className={({ isActive }) => 
-              `flex flex-col items-center p-2 rounded-xl transition-all ${
-                isActive ? 'text-[#4FD1C5]' : 'text-gray-500 hover:text-gray-300'
+              `flex flex-col items-center p-2 rounded-xl transition-all w-16 ${
+                isActive ? 'text-[#818CF8]' : 'text-gray-400 hover:text-gray-200'
               }`
             }
           >
             {item.icon}
-            <span className="text-[10px] mt-1 font-medium">{item.name}</span>
+            <span className="text-[11px] mt-1 font-medium">{item.name}</span>
           </NavLink>
         ))}
+        
+        {/* Logout Button in Bottom Nav */}
+        <button onClick={handleLogout} className="flex flex-col items-center p-2 rounded-xl transition-all w-16 text-gray-400 hover:text-red-400">
+          <LogOut className="h-6 w-6" />
+          <span className="text-[11px] mt-1 font-medium">Salir</span>
+        </button>
       </nav>
     </div>
   );

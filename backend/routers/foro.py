@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from database import get_db
-from models import ForumTopic, ForumPost, User, PacienteProfile
+from models import ForumTopic, ForumPost, User, PacienteProfile, PsicologoProfile
 from .auth import get_current_user
 
 router = APIRouter(
@@ -25,6 +25,7 @@ def moderar_contenido(texto: str):
 
 class TopicCreate(BaseModel):
     title: str
+    theme: str
     content: str
 
 class PostCreate(BaseModel):
@@ -39,11 +40,29 @@ def get_topics(db: Session = Depends(get_db)):
         result.append({
             "id": t.id,
             "title": t.title,
+            "theme": t.theme,
             "author_nickname": t.author.nickname_anonimo,
             "created_at": t.created_at,
-            "replies_count": len(t.posts) - 1 # El primer post es el creador del topic
+            "replies_count": max(0, len(t.posts) - 1)
         })
     return result
+
+def get_or_create_forum_profile(db: Session, current_user: dict):
+    paciente = db.query(PacienteProfile).filter(PacienteProfile.user_id == current_user["id"]).first()
+    if not paciente:
+        psicologo = db.query(PsicologoProfile).filter(PsicologoProfile.user_id == current_user["id"]).first()
+        if psicologo:
+            paciente = PacienteProfile(
+                user_id=current_user["id"], 
+                nickname_anonimo=f"Ps. {psicologo.nombre_completo.split()[0]}", 
+                jornada="psicologo"
+            )
+            db.add(paciente)
+            db.commit()
+            db.refresh(paciente)
+        else:
+            raise HTTPException(status_code=403, detail="Perfil no válido para publicar")
+    return paciente
 
 @router.get("/{topic_id}")
 def get_topic_details(topic_id: int, db: Session = Depends(get_db)):
@@ -74,12 +93,10 @@ def create_topic(topic_data: TopicCreate, db: Session = Depends(get_db), current
     moderar_contenido(topic_data.title)
     moderar_contenido(topic_data.content)
     
-    # Obtener perfil del paciente
-    paciente = db.query(PacienteProfile).filter(PacienteProfile.user_id == current_user["id"]).first()
-    if not paciente:
-        raise HTTPException(status_code=403, detail="Solo los pacientes pueden crear temas")
+    # Obtener perfil (paciente o pseudo-paciente para psicólogo)
+    paciente = get_or_create_forum_profile(db, current_user)
 
-    new_topic = ForumTopic(title=topic_data.title, author_id=paciente.id)
+    new_topic = ForumTopic(title=topic_data.title, theme=topic_data.theme, author_id=paciente.id)
     db.add(new_topic)
     db.commit()
     db.refresh(new_topic)
@@ -101,10 +118,8 @@ def create_post(post_data: PostCreate, db: Session = Depends(get_db), current_us
     if not topic:
         raise HTTPException(status_code=404, detail="Tema no encontrado")
 
-    # Obtener perfil del paciente
-    paciente = db.query(PacienteProfile).filter(PacienteProfile.user_id == current_user["id"]).first()
-    if not paciente:
-        raise HTTPException(status_code=403, detail="Solo los pacientes pueden responder")
+    # Obtener perfil (paciente o pseudo-paciente para psicólogo)
+    paciente = get_or_create_forum_profile(db, current_user)
 
     new_post = ForumPost(topic_id=topic.id, content=post_data.content, author_id=paciente.id)
     db.add(new_post)

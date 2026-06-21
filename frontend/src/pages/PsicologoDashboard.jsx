@@ -1,232 +1,317 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Calendar, Users, DollarSign, Clock, Settings, UserCircle, ChevronRight, FileText } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  LayoutDashboard, Calendar, Users, CreditCard, 
+  Clock, TrendingUp, CheckCircle, AlertCircle, FileText, X
+} from 'lucide-react';
 import api from '../services/api';
 
-const ingresosData = [
-  { name: 'Lun', amount: 45000 },
-  { name: 'Mar', amount: 60000 },
-  { name: 'Mié', amount: 30000 },
-  { name: 'Jue', amount: 75000 },
-  { name: 'Vie', amount: 50000 },
-  { name: 'Sáb', amount: 20000 },
-  { name: 'Dom', amount: 0 },
-];
-
 export default function PsicologoDashboard() {
-  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
+  const [metrics, setMetrics] = useState({ sesiones_realizadas: 0, ingresos_acumulados: 0, en_turno: false });
   const [citas, setCitas] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  const userName = user?.nickname || user?.email?.split('@')[0] || "Doctor";
+
+  // States for Patient Drawer
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [notaEvolutiva, setNotaEvolutiva] = useState('');
 
   useEffect(() => {
-    const fetchCitas = async () => {
-      try {
-        const response = await api.get('/appointments/');
-        setCitas(response.data);
-      } catch (error) {
-        console.error("Error fetching citas:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCitas();
+    fetchData();
   }, []);
 
-  const hour = new Date().getHours();
-  let greeting = 'Buenas noches';
-  if (hour >= 6 && hour < 12) greeting = 'Buenos días';
-  else if (hour >= 12 && hour < 19) greeting = 'Buenas tardes';
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [citasRes, metricsRes] = await Promise.all([
+        api.get('/appointments/'),
+        api.get('/appointments/metrics')
+      ]);
+      setCitas(citasRes.data);
+      setMetrics(metricsRes.data);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Cálculos dinámicos
-  const citasHoy = citas.length;
-  const pacientesActivos = new Set(citas.map(c => c.name)).size;
-  const ingresosCalculados = citas.filter(c => c.payment === 'aprobado').length * 45000; // Simulación $45k base
+  const toggleTurno = async () => {
+    try {
+      const response = await api.put('/psicologos/me/turno', { en_turno: !metrics.en_turno });
+      setMetrics(prev => ({ ...prev, en_turno: response.data.en_turno }));
+    } catch (error) {
+      console.error("Error al actualizar turno", error);
+    }
+  };
+
+  const openPatientDrawer = (paciente) => {
+    setSelectedPatient(paciente);
+    setNotaEvolutiva('');
+    setIsDrawerOpen(true);
+  };
+
+  const handleSaveNote = () => {
+    // Aquí iría la llamada a la API para guardar la nota en la DB real.
+    // Como es prototipo, solo cerramos y mostramos alerta.
+    alert("Nota guardada exitosamente en el expediente (Prototipo)");
+    setIsDrawerOpen(false);
+  };
+
+  const TABS = [
+    { id: 'overview', label: 'Inicio', icon: <LayoutDashboard className="w-5 h-5" /> },
+    { id: 'agenda', label: 'Agenda', icon: <Calendar className="w-5 h-5" /> },
+    { id: 'patients', label: 'Pacientes', icon: <Users className="w-5 h-5" /> },
+    { id: 'billing', label: 'Liquidación', icon: <CreditCard className="w-5 h-5" /> },
+  ];
+
+  // Extraer pacientes únicos de las citas
+  const pacientesUnicos = Array.from(new Set(citas.map(c => c.name))).map(name => {
+    return { name, lastSession: citas.find(c => c.name === name)?.date || "Desconocida" };
+  });
 
   return (
-    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
-      
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-3xl font-bold text-white mb-1">{greeting}, <span className="text-emerald-400">Ps. {userName}</span>.</h1>
-          <p className="text-gray-400">Aquí está el resumen de tu jornada clínica de hoy.</p>
-        </motion.div>
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 pb-32 md:pb-8 font-sans">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-[#E2E8F0]">Panel Clínico</h1>
+          <p className="text-[#94A3B8]">Gestión de consultas y monitoreo de ingresos</p>
+        </div>
         
-        <motion.button 
-          initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
-          className="flex items-center space-x-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-gray-300 transition-colors"
-        >
-          <Settings className="h-4 w-4" />
-          <span className="text-sm font-medium">Configurar Tarifas/Pagos</span>
-        </motion.button>
-      </div>
-
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="bg-[#151C2C] border border-white/5 rounded-2xl p-6 shadow-lg flex items-center"
-        >
-          <div className="bg-blue-500/20 p-4 rounded-xl mr-5">
-            <Calendar className="h-7 w-7 text-blue-400" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-400 font-medium mb-1">Citas Hoy</p>
-            <h3 className="text-2xl font-bold text-white">{citasHoy}</h3>
-          </div>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="bg-[#151C2C] border border-white/5 rounded-2xl p-6 shadow-lg flex items-center"
-        >
-          <div className="bg-emerald-500/20 p-4 rounded-xl mr-5">
-            <Users className="h-7 w-7 text-emerald-400" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-400 font-medium mb-1">Pacientes Activos</p>
-            <h3 className="text-2xl font-bold text-white">{pacientesActivos || 12}</h3>
-          </div>
-        </motion.div>
-
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="bg-[#151C2C] border border-white/5 rounded-2xl p-6 shadow-lg flex items-center justify-between"
-        >
-          <div className="flex items-center">
-            <div className="bg-amber-500/20 p-4 rounded-xl mr-5">
-              <DollarSign className="h-7 w-7 text-amber-400" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-400 font-medium mb-1">Ingresos del Mes</p>
-              <h3 className="text-2xl font-bold text-white">${ingresosCalculados > 0 ? ingresosCalculados.toLocaleString('es-CL') : '280.000'}</h3>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Main Grid: Agenda & Patients */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
-        {/* Agenda del Día */}
-        <motion.div 
-          initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}
-          className="bg-[#151C2C] border border-white/5 rounded-2xl shadow-xl overflow-hidden flex flex-col"
-        >
-          <div className="p-6 border-b border-white/5 flex justify-between items-center">
-            <h2 className="text-lg font-bold text-white flex items-center">
-              <Clock className="h-5 w-5 mr-2 text-blue-400" /> Agenda del Día
-            </h2>
-            <button onClick={() => window.location.reload()} className="text-xs font-medium px-2.5 py-1 bg-white/10 hover:bg-white/20 text-gray-300 rounded-full transition-colors cursor-pointer">Actualizar</button>
-          </div>
-          
-          <div className="p-2 flex-1">
-            <div className="space-y-1">
-              {loading ? (
-                <div className="text-center p-4 text-gray-500">Cargando agenda...</div>
-              ) : citas.length === 0 ? (
-                <div className="text-center p-4 text-gray-500">No tienes citas programadas.</div>
-              ) : citas.map((cita, i) => (
-                <div key={i} className={`p-4 rounded-xl flex items-center justify-between transition-colors ${cita.status === 'confirmada' ? 'bg-blue-500/10 border border-blue-500/20' : 'hover:bg-white/5'}`}>
-                  <div className="flex items-center gap-4">
-                    <div className="text-center w-14">
-                      <p className={`font-bold ${cita.status === 'confirmada' ? 'text-blue-400' : 'text-gray-300'}`}>{cita.time}</p>
-                    </div>
-                    <div className="h-10 w-[2px] bg-white/10 rounded-full hidden sm:block"></div>
-                    <div>
-                      <h4 className="font-semibold text-white">{cita.name}</h4>
-                      <p className="text-xs text-gray-400">{cita.payment === 'aprobado' ? 'Pago Recibido' : 'Pago Pendiente'}</p>
-                    </div>
-                  </div>
-                  <div className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                    cita.status === 'confirmada' ? 'bg-emerald-500/10 text-emerald-400 animate-pulse' : 
-                    cita.status === 'en curso' ? 'bg-blue-500/20 text-blue-400' : 
-                    'bg-white/5 text-gray-400'
-                  }`}>
-                    {cita.status.toUpperCase()}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="p-4 border-t border-white/5 bg-black/20">
-            <button className="w-full text-sm text-blue-400 font-medium hover:text-blue-300 transition-colors flex items-center justify-center">
-              Ver calendario completo <ChevronRight className="h-4 w-4 ml-1" />
-            </button>
-          </div>
-        </motion.div>
-
-        {/* Últimos Pacientes & Gráfico */}
-        <div className="space-y-8 flex flex-col">
-          
-          {/* Chart Pequeño */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }}
-            className="bg-[#151C2C] border border-white/5 rounded-2xl p-6 shadow-xl"
+        {/* Toggle On-Call */}
+        <div className="flex items-center space-x-3 bg-[#141C2E] border border-white/5 p-2 rounded-2xl">
+          <span className="text-sm font-medium text-[#94A3B8]">Guardia PAP:</span>
+          <button 
+            onClick={toggleTurno}
+            className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors focus:outline-none ${metrics.en_turno ? 'bg-[#2DD4BF]' : 'bg-[#1E293B]'}`}
           >
-            <h2 className="text-lg font-bold text-white mb-6 flex items-center">
-              <DollarSign className="h-5 w-5 mr-2 text-amber-400" /> Rendimiento Semanal
-            </h2>
-            <div className="h-48 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={ingresosData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <XAxis dataKey="name" stroke="#6B7280" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#6B7280" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `$${value/1000}k`} />
-                  <Tooltip 
-                    cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                    contentStyle={{ backgroundColor: '#111827', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                    itemStyle={{ color: '#FBBF24' }}
-                    formatter={(value) => [`$${value}`, 'Ingresos']}
-                  />
-                  <Bar dataKey="amount" fill="#FBBF24" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-
-          {/* Últimos Pacientes */}
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }}
-            className="bg-[#151C2C] border border-white/5 rounded-2xl p-6 shadow-xl flex-1 flex flex-col"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-white flex items-center">
-                <Users className="h-5 w-5 mr-2 text-emerald-400" /> Últimos Pacientes
-              </h2>
-            </div>
-            
-            <div className="space-y-4 flex-1">
-              {[
-                { name: 'Ana Rodríguez', date: 'Hace 2 días', badge: 'Terapia TCC' },
-                { name: 'Estudiante #8812', date: 'Hace 3 días', badge: 'Urgencia' },
-              ].map((paciente, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors border border-white/5">
-                  <div className="flex items-center gap-3">
-                    <UserCircle className="h-10 w-10 text-gray-400" />
-                    <div>
-                      <h4 className="font-semibold text-white text-sm">{paciente.name}</h4>
-                      <p className="text-xs text-gray-500">{paciente.date}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="hidden sm:inline-block text-[10px] font-medium px-2 py-1 bg-white/10 text-gray-300 rounded-md">
-                      {paciente.badge}
-                    </span>
-                    <button className="p-2 text-gray-400 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors" title="Ver Historial Clínico">
-                      <FileText className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
+            <span className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${metrics.en_turno ? 'translate-x-9' : 'translate-x-1'}`} />
+          </button>
+          <span className={`text-xs font-bold ${metrics.en_turno ? 'text-[#2DD4BF]' : 'text-gray-500'}`}>
+            {metrics.en_turno ? 'EN LÍNEA' : 'OFFLINE'}
+          </span>
         </div>
       </div>
+
+      {/* Navegación por Tabs */}
+      <div className="flex space-x-2 bg-[#141C2E] p-2 rounded-2xl border border-white/5 overflow-x-auto scrollbar-hide">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex items-center space-x-2 px-5 py-3 rounded-xl font-medium transition-all whitespace-nowrap ${activeTab === tab.id ? 'bg-[#2DD4BF]/10 text-[#2DD4BF] shadow-[0_0_10px_rgba(45,212,191,0.1)]' : 'text-[#64748B] hover:text-[#E2E8F0] hover:bg-white/5'}`}
+          >
+            {tab.icon} <span>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Contenido Dinámico */}
+      {loading ? (
+        <div className="h-64 flex items-center justify-center">
+          <p className="text-[#64748B] animate-pulse font-medium">Sincronizando expedientes...</p>
+        </div>
+      ) : (
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          {/* TAB 1: OVERVIEW */}
+          {activeTab === 'overview' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-[#141C2E] border border-white/5 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10"><CheckCircle className="w-24 h-24" /></div>
+                <h3 className="text-[#94A3B8] font-medium mb-2">Sesiones Realizadas</h3>
+                <p className="text-4xl font-bold text-[#E2E8F0]">{metrics.sesiones_realizadas}</p>
+                <div className="mt-4 flex items-center text-xs text-[#2DD4BF]">
+                  <TrendingUp className="w-4 h-4 mr-1" /> +12% este mes
+                </div>
+              </div>
+              
+              <div className="bg-[#141C2E] border border-white/5 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-4 opacity-10"><CreditCard className="w-24 h-24" /></div>
+                <h3 className="text-[#94A3B8] font-medium mb-2">Ingresos Acumulados</h3>
+                <p className="text-4xl font-bold text-[#E2E8F0]">${metrics.ingresos_acumulados.toLocaleString('es-CL')}</p>
+                <div className="mt-4 text-xs text-[#64748B]">
+                  Corresponde al 70% de Honorarios
+                </div>
+              </div>
+
+              <div className={`border rounded-3xl p-6 shadow-xl relative overflow-hidden transition-colors ${metrics.en_turno ? 'bg-[#2DD4BF]/10 border-[#2DD4BF]/30' : 'bg-[#141C2E] border-white/5'}`}>
+                 <div className="absolute top-0 right-0 p-4 opacity-10"><AlertCircle className="w-24 h-24" /></div>
+                 <h3 className={`font-medium mb-2 ${metrics.en_turno ? 'text-[#2DD4BF]' : 'text-[#94A3B8]'}`}>Bono de Disponibilidad</h3>
+                 <p className="text-2xl font-bold text-[#E2E8F0]">
+                   {metrics.en_turno ? 'Activo' : 'Inactivo'}
+                 </p>
+                 <p className="mt-4 text-xs text-[#94A3B8]">
+                   Recibes un ingreso extra por estar disponible para Primeros Auxilios Psicológicos.
+                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: AGENDA */}
+          {activeTab === 'agenda' && (
+            <div className="bg-[#141C2E] border border-white/5 rounded-3xl p-6 shadow-xl">
+              <h2 className="text-xl font-bold text-[#E2E8F0] mb-6 flex items-center">
+                <Calendar className="w-6 h-6 mr-3 text-[#818CF8]" /> Próximas Citas
+              </h2>
+              {citas.length > 0 ? (
+                <div className="space-y-4">
+                  {citas.map(cita => {
+                    const isMadrugada = parseInt(cita.time.split(':')[0]) < 8;
+                    return (
+                      <div key={cita.id} className="flex items-center justify-between p-4 bg-[#0D1321] border border-white/5 rounded-2xl hover:border-white/10 transition-colors">
+                        <div className="flex items-center space-x-4">
+                          <div className={`p-3 rounded-xl ${isMadrugada ? 'bg-indigo-500/20 text-indigo-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                            <Clock className="w-6 h-6" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-[#E2E8F0]">{cita.name}</h4>
+                            <p className="text-sm text-[#94A3B8]">{cita.date} - {cita.time} hrs</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className={`inline-block px-3 py-1 rounded-lg text-xs font-bold uppercase ${cita.tipo_pago === 'subsidio_institucional' ? 'bg-blue-500/20 text-blue-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                            {cita.tipo_pago === 'subsidio_institucional' ? 'Subsidio Inst.' : 'Copago'}
+                          </span>
+                          <p className="text-xs text-[#64748B] mt-1 uppercase">{cita.status}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="text-[#64748B] text-center py-8">No tienes citas agendadas aún.</p>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: PACIENTES E HISTORIAL */}
+          {activeTab === 'patients' && (
+            <div className="bg-[#141C2E] border border-white/5 rounded-3xl p-6 shadow-xl">
+              <h2 className="text-xl font-bold text-[#E2E8F0] mb-6 flex items-center">
+                <Users className="w-6 h-6 mr-3 text-[#2DD4BF]" /> Historial Clínico
+              </h2>
+              {pacientesUnicos.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pacientesUnicos.map((p, idx) => (
+                    <button 
+                      key={idx} 
+                      onClick={() => openPatientDrawer(p)}
+                      className="text-left p-5 bg-[#0D1321] border border-white/5 rounded-2xl hover:border-[#2DD4BF]/50 transition-all group"
+                    >
+                      <div className="flex items-center space-x-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#2DD4BF] to-[#6366F1] flex items-center justify-center text-[#0B1321] font-bold">
+                          {p.name.substring(0,2).toUpperCase()}
+                        </div>
+                        <h4 className="font-bold text-[#E2E8F0]">{p.name}</h4>
+                      </div>
+                      <p className="text-xs text-[#64748B]">Última sesión: {p.lastSession}</p>
+                      <div className="mt-4 text-xs font-bold text-[#2DD4BF] opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                        Abrir Expediente &rarr;
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[#64748B] text-center py-8">No hay pacientes registrados en tu historial.</p>
+              )}
+            </div>
+          )}
+
+          {/* TAB 4: LIQUIDACIÓN */}
+          {activeTab === 'billing' && (
+            <div className="bg-[#141C2E] border border-white/5 rounded-3xl p-6 shadow-xl max-w-2xl mx-auto">
+              <h2 className="text-xl font-bold text-[#E2E8F0] mb-6 flex items-center justify-center border-b border-white/5 pb-4">
+                <FileText className="w-6 h-6 mr-3 text-pink-400" /> Simulación de Boleta de Honorarios
+              </h2>
+              
+              <div className="space-y-4 mb-8">
+                <div className="flex justify-between items-center p-3 bg-[#0D1321] rounded-xl border border-white/5">
+                  <span className="text-[#94A3B8]">Sesiones por Copago (Alumnos)</span>
+                  <span className="font-medium text-[#E2E8F0]">${(metrics.ingresos_acumulados * 0.4).toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-[#0D1321] rounded-xl border border-white/5">
+                  <span className="text-[#94A3B8]">Sesiones por Subsidio (Institución)</span>
+                  <span className="font-medium text-[#E2E8F0]">${(metrics.ingresos_acumulados * 0.6).toLocaleString('es-CL')}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
+                  <span className="text-indigo-300 font-medium">Bono de Disponibilidad (On-call)</span>
+                  <span className="font-bold text-indigo-400">+ $50.000</span>
+                </div>
+              </div>
+
+              <div className="border-t border-dashed border-white/20 pt-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold text-[#E2E8F0]">Total a Transferir</span>
+                  <span className="text-3xl font-bold text-[#2DD4BF]">${(metrics.ingresos_acumulados + 50000).toLocaleString('es-CL')}</span>
+                </div>
+                <p className="text-xs text-center text-[#64748B] mt-4">La liquidación se emitirá automáticamente el día 5 del próximo mes.</p>
+              </div>
+            </div>
+          )}
+
+        </motion.div>
+      )}
+
+      {/* Drawer Clínico (Expediente Lateral) */}
+      <AnimatePresence>
+        {isDrawerOpen && selectedPatient && (
+          <>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsDrawerOpen(false)}
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 right-0 z-50 w-full max-w-md bg-[#141C2E] border-l border-white/10 shadow-2xl flex flex-col"
+            >
+              <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0B1321]">
+                <div>
+                  <h3 className="text-xl font-bold text-[#E2E8F0]">{selectedPatient.name}</h3>
+                  <p className="text-xs text-[#2DD4BF]">Expediente Confidencial</p>
+                </div>
+                <button onClick={() => setIsDrawerOpen(false)} className="text-[#64748B] hover:text-[#E2E8F0]">
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="bg-[#0D1321] rounded-2xl p-4 border border-white/5">
+                  <h4 className="text-sm font-bold text-[#94A3B8] mb-2">Historial Previo</h4>
+                  <p className="text-sm text-[#E2E8F0] italic opacity-50">No hay notas evolutivas anteriores registradas para este paciente.</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-[#E2E8F0] mb-2">Evolución Clínica (Sesión Actual)</label>
+                  <textarea 
+                    value={notaEvolutiva}
+                    onChange={(e) => setNotaEvolutiva(e.target.value)}
+                    rows={8}
+                    className="w-full bg-[#0D1321] text-[#E2E8F0] border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-[#2DD4BF]/50 resize-none text-sm placeholder-[#475569]"
+                    placeholder="Describe los avances, estado anímico, focos trabajados y tareas asignadas..."
+                  />
+                </div>
+              </div>
+
+              <div className="p-6 bg-[#0B1321] border-t border-white/5">
+                <button 
+                  onClick={handleSaveNote}
+                  disabled={!notaEvolutiva.trim()}
+                  className="w-full py-4 bg-[#2DD4BF] hover:bg-[#14B8A6] disabled:bg-[#1E293B] disabled:text-[#64748B] text-[#0B1321] font-bold rounded-xl transition-colors flex items-center justify-center shadow-lg"
+                >
+                  <FileText className="w-5 h-5 mr-2" /> Guardar y Encriptar Nota
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

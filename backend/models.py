@@ -23,6 +23,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
     role = Column(Enum(UserRole), nullable=False)
@@ -43,6 +44,7 @@ class PacienteProfile(Base):
     nickname_anonimo = Column(String, unique=True, index=True, nullable=False)
     carrera = Column(String, nullable=True)
     jornada = Column(String, default="vespertino")
+    sesiones_gratuitas_restantes = Column(Integer, default=3)
 
     # Relaciones
     user = relationship("User", back_populates="paciente_profile")
@@ -71,8 +73,10 @@ class PsicologoProfile(Base):
     nombre_completo = Column(String, nullable=False)
     presentacion = Column(Text, nullable=True)
     enfoque_clinico = Column(String, nullable=True)
+    tarifa_base = Column(Float, default=0.0)
     tarifa_diurna = Column(Float, nullable=False)
     tarifa_extendida = Column(Float, nullable=False)
+    en_turno = Column(Boolean, default=False)
     moneda = Column(String, default="CLP", nullable=False)
     datos_transferencia = Column(Text, nullable=True)
 
@@ -91,6 +95,9 @@ class Cita(Base):
     fecha_hora = Column(DateTime(timezone=True), nullable=False)
     estado = Column(Enum(CitaEstado), default=CitaEstado.pendiente, nullable=False)
     pago_simulado_status = Column(Enum(PagoStatus), default=PagoStatus.pendiente, nullable=False)
+    tipo_pago = Column(String, nullable=True) # 'subsidio_institucional' o 'copago_alumno'
+    monto_total = Column(Float, nullable=True)
+    honorario_psicologo = Column(Float, nullable=True)
 
     # Relaciones
     paciente = relationship("PacienteProfile", back_populates="citas")
@@ -101,6 +108,7 @@ class ForumTopic(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
+    theme = Column(String, default="General", nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     # Autor

@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        setUser({ token, role: decoded.role, nickname: decoded.nickname, email: decoded.sub });
+        setUser({ token, role: decoded.role, username: decoded.username, nickname: decoded.nickname, email: decoded.sub });
       } catch (e) {
         localStorage.removeItem('token');
       }
@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }) => {
   const login = (token) => {
     localStorage.setItem('token', token);
     const decoded = jwtDecode(token);
-    setUser({ token, role: decoded.role, nickname: decoded.nickname, email: decoded.sub });
+    setUser({ token, role: decoded.role, username: decoded.username, nickname: decoded.nickname, email: decoded.sub });
   };
 
   const logout = () => {

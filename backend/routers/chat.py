@@ -12,6 +12,7 @@ class ChatRequest(BaseModel):
     historial: List[Dict[str, Any]] = []
     nickname: Optional[str] = None
     time_of_day: Optional[str] = None
+    mood: Optional[str] = None
 
 @router.post("/api/chat/pap")
 async def chat_pap_endpoint(request: ChatRequest):
@@ -20,7 +21,8 @@ async def chat_pap_endpoint(request: ChatRequest):
             mensaje_usuario=request.mensaje_usuario,
             historial=request.historial,
             nickname=request.nickname,
-            time_of_day=request.time_of_day
+            time_of_day=request.time_of_day,
+            mood=request.mood
         )
         return {"respuesta": respuesta}
     except Exception as e:
